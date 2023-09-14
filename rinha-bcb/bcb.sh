@@ -1,24 +1,35 @@
 #!/usr/bin/env bash
 
 declare -a STACK
+declare -a NAME
 
 function add_constant_literal() {
     local cte="$1"
+    local -i pos=${#STACK[@]}
     
-    STACK[${#STACK[@]}]="$cte"
+    STACK[$pos]="$cte"
+
+    if [ $# = 2 ]; then
+        local name="$2"
+        NAME[$pos]="$name"
+    fi
 }
 
 function add_function() {
     local nargs="$1"
     local fname="$2"
 
-    add_constant_literal "&$nargs#$fname"
+    add_constant_literal "&$nargs#$fname" "$fname"
 }
 
 function add_constant_int() {
     local -i n="$1"
 
-    add_constant_literal "#$n"
+    if [ $# = 2 ]; then
+        add_constant_literal "#$n" "$2"
+    else
+        add_constant_literal "#$n"
+    fi
 }
 
 function add_constant_string() {
@@ -26,7 +37,11 @@ function add_constant_string() {
     s="${n//\\/\\\\}"
     s="${n//\"/\\\"}"
 
-    add_constant_literal "\$\"$s\""
+    if [ $# = 2 ]; then
+        add_constant_literal "\$\"$s\"" "$2"
+    else
+        add_constant_literal "\$\"$s\""
+    fi
 }
 
 function add_to_stack_unary_external_functions() {
@@ -288,6 +303,15 @@ function extract_args_quant() {
         esac
     done
     echo "$buff"
+}
+
+function name_dump() {
+        local -i i
+    local -i STACK_POINTER=$1
+
+    for (( i=0; i<STACK_POINTER; i++ )) do
+        echo "NAME[$i]:${NAME[$i]}"
+    done >&2
 }
 
 function stack_dump() {
