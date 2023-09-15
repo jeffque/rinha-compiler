@@ -538,15 +538,242 @@ function run() {
 #   - 15 : or, binária, retorna a operação OR entre dois booleanos
 #   - 16 : tuple, binária, retorna uma tupla com os dois elementos
 
+function mangled_id() {
+    local id="$1"
+    [ "${id::1}" = _ ]
+}
 
-#stack_dump ${#STACK[@]}
+function bind_values_by_map() {
+    local LOCAL_FUNCTION="$1"
+    local -i INSTRUCTION_POINTER
+    local -i EOP=${#LOCAL_FUNCTION}
 
-add_constant_int 1                               # 17
-add_constant_int 2                               # 18
-add_constant_int 10                              # 19
-add_constant_literal T                           # 20
-add_constant_literal F                           # 21
-add_constant_literal '&3%L%1;J2;L%2;G1;L%3;!'    # 22
+    local STATE_BYTECODE
+    local buff
+    local region
 
-PROGRAM="L#20;L#18;L#19;C#22;C#0;!"
+    local -i i
+
+    local assembled=""
+
+    for (( INSTRUCTION_POINTER=0 ; INSTRUCTION_POINTER < EOP; INSTRUCTION_POINTER++ )) do
+        buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+        INSTRUCTION_POINTER+=1
+        STATE_BYTECODE=`bytecode_recog $buff`
+        case $STATE_BYTECODE in
+            LOAD)
+                local region_mnemonics
+                region_mnemonics="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                INSTRUCTION_POINTER+=1
+                region=`region_recog $region_mnemonics`
+
+                if [ "$region" = ERROR ]; then
+                    return 1
+                fi
+
+                buff=''
+                while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
+                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                    INSTRUCTION_POINTER+=1
+                done
+                if [ "$region" = GLOBAL ]; then
+                    buff=`get_position_by_name "$buff"`
+                fi
+
+                assembled+="L${region_mnemonics}${buff};"
+                ;;
+            CALL)
+                local region_mnemonics
+                region_mnemonics="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                INSTRUCTION_POINTER+=1
+                region=`region_recog $region_mnemonics`
+
+                if [ "$region" = ERROR ]; then
+                    return 1
+                fi
+
+                buff=''
+                while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
+                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                    INSTRUCTION_POINTER+=1
+                done
+                if [ "$region" = GLOBAL ]; then
+                    buff=`get_position_by_name "$buff"`
+                fi
+
+                assembled+="C${region_mnemonics}${buff};"
+                ;;
+            JUMP_IFNOT)
+                buff=''
+
+                while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
+                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                    INSTRUCTION_POINTER+=1
+                done
+
+                assembled+="J$buff;"
+                ;;
+            JUMP)
+                buff=''
+
+                while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
+                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                    INSTRUCTION_POINTER+=1
+                done
+
+                assembled+="G$buff;"
+                ;;
+            END)
+                ;;
+            ERROR)
+                echo "BCB em estado inválido" >&2
+                return 1
+                ;;
+        esac
+    done
+    echo "${assembled}!"
+}
+
+function help_command() {
+    cat <<EOL
+$0 <constant pool manipulation...> PROGRAM
+
+Roda o BCB com as manipulações do constant pool. Por favor, verifique a
+descrição dis bytecodes para escrever o programa e funções.
+
+Toda manipulação de constant pool é na forma de uma flag de CLI acompanhada de
+uma única string no formato '_<name>:<value>', onde '_<name>' é o _mangled
+name_ do objeto e '<value>' é o valor do objeto. Tuplas não são aceitas como
+objetos de primeira classe, você vai precisar criar a sua dinamicamente.
+
+    --help              imprime esta ajuda aqui
+    --stack-dump        imprime todas as informações que estão na stack
+    --name-dump         similar ao --stack-dump, mas imprime o nome dos objetos
+                        relacionados as posições correspondentes.
+    --add-literal [_name:value]
+                        adiciona na constant pool o valor 'value', associando-o
+                        ao nome '_name'. Use quando não precisar de
+                        pós-processamento para o valor.
+    --add-string [_name:value]
+                        similar ao --add-literal, mas faz o tratamento da
+                        string corretamente. Use para adicionar strings sem
+                        precisar se preocupar com as representações internas do
+                        BCB.
+    --add-int [_name:value]
+                        similar ao --add-string, mas faz o tratamento do número
+                        corretamente. Use para adicionar números sem precisar
+                        se preocupar com as representações internas do BCB.
+    --add-function [_name:value]
+                        similar ao --add-string, mas para adicionar funções.
+                        Precisa colocar todos os bytecodes, porém com um twist:
+                        as referências globais usadas são os nomes
+                        referenciados no --name-dump. As funções adicionadas
+                        dessa maneira passarão por um processamento para
+                        resolver todas as questões relativas ao binding de
+                        valores globais referenciados.
+EOL
+}
+
+declare -a add_later_rewrite
+PROGRAM=''
+
+while [ $# -gt 0 ]; do
+    cli_arg="$1"
+    shift
+    case "$cli_arg" in
+        --stack-dump)
+            stack_dump ${#STACK[@]}
+            ;;
+        --name-dump)
+            name_dump ${#STACK[@]}
+            ;;
+        --add-literal)
+            cli_arg="$1"
+            shift
+            mangled_name="${cli_arg%%:*}"
+            literal="${cli_arg#*:}"
+            if ! mangled_id "$mangled_name"; then
+                echo >&2 "Identificadores passados no literal precisam ser mangled, começados com _"
+                echo >&2 "<$mangled_name>"
+                exit 1
+            fi
+            add_constant_literal "$literal" "$mangled_name"
+            ;;
+        --add-function)
+            cli_arg="$1"
+            shift
+            mangled_name="${cli_arg%%:*}"
+            literal="${cli_arg#*:}"
+            if ! mangled_id "$mangled_name"; then
+                echo >&2 "Identificadores passados no literal precisam ser mangled, começados com _"
+                echo >&2 "<$mangled_name>"
+                exit 1
+            fi
+            add_constant_literal "$literal" "$mangled_name"
+            add_later_rewrite[${#add_later_rewrite[@]}]=`get_position_by_name "$mangled_name"`
+            ;;
+        --add-string)
+            cli_arg="$1"
+            shift
+            mangled_name="${cli_arg%%:*}"
+            literal="${cli_arg#*:}"
+            if ! mangled_id "$mangled_name"; then
+                echo >&2 "Identificadores passados no literal precisam ser mangled, começados com _"
+                echo >&2 "<$mangled_name>"
+                exit 1
+            fi
+            add_constant_string "$literal" "$mangled_name"
+            ;;
+        --add-int)
+            cli_arg="$1"
+            shift
+            mangled_name="${cli_arg%%:*}"
+            literal="${cli_arg#*:}"
+            if ! mangled_id "$mangled_name"; then
+                echo >&2 "Identificadores passados no literal precisam ser mangled, começados com _"
+                echo >&2 "<$mangled_name>"
+                exit 1
+            fi
+            add_constant_int "$literal" "$mangled_name"
+            ;;
+        --help)
+            help_command
+            exit
+            ;;
+        *)
+            if [ "$PROGRAM" = "" ]; then
+                PROGRAM="$cli_arg"
+            else
+                echo "Só pode passar um PROGRAM por vez" >&2
+                help_command >&2
+                exit 1
+            fi
+    esac
+done
+
+function resolve_all_late_bind() {
+    local pos
+    local raw
+    local bind
+    local header
+
+    for pos in "${add_later_rewrite[@]}"; do
+        raw="${STACK[$pos]}"
+
+        header="${raw%%\%*}%"
+        raw="${raw:${#header}}"
+
+        bind="$header`bind_values_by_map "$raw"`"
+        STACK[$pos]="$bind"
+    done
+}
+
+resolve_all_late_bind
+
+if [ "$PROGRAM" = "" ]; then
+    exit
+fi
+
+PROGRAM=`bind_values_by_map "$PROGRAM"`
+
 run ${#STACK[@]} ${#STACK[@]} "$PROGRAM" 3>&1
