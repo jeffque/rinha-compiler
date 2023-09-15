@@ -34,8 +34,8 @@ function add_constant_int() {
 
 function add_constant_string() {
     local s="$1"
-    s="${n//\\/\\\\}"
-    s="${n//\"/\\\"}"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
 
     if [ $# = 2 ]; then
         add_constant_literal "\$\"$s\"" "$2"
