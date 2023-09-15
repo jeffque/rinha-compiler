@@ -306,7 +306,7 @@ function extract_args_quant() {
 }
 
 function name_dump() {
-        local -i i
+    local -i i
     local -i STACK_POINTER=$1
 
     for (( i=0; i<STACK_POINTER; i++ )) do
