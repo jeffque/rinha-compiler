@@ -383,15 +383,9 @@ function run() {
                     buff=$(( $buff + ${STACK_BASE} ))
                 fi
 
-                echo "antes do load..." >&2
-                stack_dump ${STACK_POINTER}
-                echo "..." >&2
                 STACK[${STACK_POINTER}]="${STACK[$buff]}"
                 STACK_POINTER+=1
                 STATE_BYTECODE=START
-                echo "... depois do load" >&2
-                stack_dump ${STACK_POINTER}
-                echo "..." >&2
                 ;;
             CALL)
                 buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
@@ -439,7 +433,6 @@ function run() {
                 done
                 STACK_POINTER+=-1
                 if [ "${STACK[${STACK_POINTER}]}" != T ]; then
-                    echo "vai pular $buff" >&2
                     njumps="$buff"
                     
                     for (( i=-1; i < njumps; INSTRUCTION_POINTER++ )) do
@@ -448,8 +441,6 @@ function run() {
                         fi
                     done
                     INSTRUCTION_POINTER+=-1
-                    echo "após salto ${LOCAL_FUNCTION:${INSTRUCTION_POINTER}}" >&2
-                    stack_dump ${STACK_POINTER}
                 fi
                 STATE_BYTECODE=START
                 ;;
@@ -461,7 +452,6 @@ function run() {
                     INSTRUCTION_POINTER+=1
                 done
 
-                echo "salto incondicional pular $buff" >&2
                 njumps="$buff"
 
                 for (( i=-1; i < njumps; INSTRUCTION_POINTER++ )) do
@@ -471,8 +461,6 @@ function run() {
                 done
                 INSTRUCTION_POINTER+=-1
 
-                echo "após salto ${LOCAL_FUNCTION:${INSTRUCTION_POINTER}}" >&2
-                stack_dump ${STACK_POINTER}
                 STATE_BYTECODE=START
                 ;;
             END)
