@@ -314,6 +314,21 @@ function name_dump() {
     done >&2
 }
 
+function get_position_by_name() {
+    local desired_name="$1"
+    local -i i
+    local -i STACK_POINTER=${#STACK[@]}
+
+    for (( i=0; i<STACK_POINTER; i++ )) do
+        if [ "${NAME[$i]}" = "$desired_name" ]; then
+            echo $i
+            return
+        fi
+    done
+    echo -1
+    return 1
+}
+
 function stack_dump() {
     local -i i
     local -i STACK_POINTER=$1
