@@ -11,3 +11,6 @@ read -p "exemplo de chamada do BCB: print(sumAndQuad(1, 10)) "
 
 read -p "exemplo de chamada do BCB: print(fib(12)) "
 ./bcb.sh --add-function "_fib:&1%L%1;L#_1;C#lesser_equal;J2;L%1;G9;L%1;L#_1;C#subtract;C#_fib;L%1;L#_2;C#subtract;C#_fib;C#add;!" --add-int "_1:1" --add-int "_2:2" --add-int "_entrada:12" 'L#_entrada;C#_fib;C#print;!'
+
+read -p "exemplo de chamada do BCB: 0, 1, 1, 1, _marm, X, X, X, X, print, X"
+./bcb.sh --add-int "_1:1" --add-int "_0:0" --add-function '_marm:&1%L%1;L#_0;C#equal;J2;L#_1;G1;L#_marm;!' 'L#_0;L#_1;L#_1;L#_1;L#_marm;X;X;X;X;L#print;X;!'

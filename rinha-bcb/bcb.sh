@@ -274,6 +274,7 @@ function bytecode_recog() {
         C) echo CALL ;;
         J) echo JUMP_IFNOT ;;
         G) echo JUMP ;;
+        X) echo EXEC ;;
         !) echo END ;;
         *) echo ERROR ;;
     esac
@@ -422,6 +423,28 @@ function run() {
                 fi
                 FUTURE_STACK_BASE=${STACK_POINTER}
                 fcalled="${STACK[$buff]}"
+                if [ "${fcalled::1}" != '&' ]; then
+                    STATE_BYTECODE=ERROR
+                    continue
+                fi
+                nparams=`extract_args_quant "$fcalled"`
+                FUTURE_STACK_BASE+=-$nparams
+                buff="${fcalled#&$nparams}"
+
+                case "${buff::1}" in
+                    '#') run_global $FUTURE_STACK_BASE $nparams "${buff:1}" ;;
+                    '%') run $(( FUTURE_STACK_BASE - 1 )) $STACK_POINTER "${buff:1}" ;;
+                esac
+                STACK_POINTER+=-$nparams
+                STACK[${STACK_POINTER}]="$RET"
+                STACK_POINTER+=1
+                STATE_BYTECODE=START
+                ;;
+            EXEC)
+                STACK_POINTER+=-1
+                FUTURE_STACK_BASE=${STACK_POINTER}
+                fcalled="${STACK[$STACK_POINTER]}"
+
                 if [ "${fcalled::1}" != '&' ]; then
                     STATE_BYTECODE=ERROR
                     continue
@@ -602,6 +625,9 @@ function bind_values_by_map() {
                 fi
 
                 assembled+="C${region_mnemonics}${buff};"
+                ;;
+            EXEC)
+                assembled+="X;"
                 ;;
             JUMP_IFNOT)
                 buff=''
