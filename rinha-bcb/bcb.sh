@@ -321,7 +321,7 @@ function string_representation() {
 function print() {
     local result="`string_representation "$1"`"
     echo "$result" >&3
-    echo "#0"
+    echo "$1"
 }
 
 function bytecode_recog() {
@@ -600,7 +600,7 @@ function run() {
 #       a lista de <opcodes>, terminada por um !
 #
 # funções pré-definidas e suas posições de memória
-#   - 0 : print, unária, retorna 0
+#   - 0 : print, unária, retorna o seu argumento
 #   - 1 : first, unária, retorna o primeiro elemento da tupla, não implementado tuplas
 #   - 2 : second, unária, retorna o segundo elemento da tupla, não implementado tuplas
 #   - 3 : add, binária, retorna a soma de dois inteiros ou uma string com a concatenação

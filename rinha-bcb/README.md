@@ -93,7 +93,7 @@ previamente definidas:
 
 | memória | nome          | nargs          | resultado                       |
 |---------|---------------|----------------|---------------------------------|
-| 0       | print         | 1              | #0                              |
+| 0       | print         | 1              | identidade                      |
 | 1       | first         | 1              | LHS da tupla                    |
 | 2       | second        | 1              | RHS da tupla                    |
 | 3       | add           | 2              | soma se int, concat otherwise   |

@@ -23,3 +23,6 @@ read -p "exemplo de chamada do BCB: print de second de first de ((\$\"eu sou o J
 
 read -p "exemplo de chamada do BCB: print de second de ((\$\"eu sou o Jeff, prazer\",#42),\$\"marmota\") " &&
 ./bcb.sh --add-int "_42:42" --add-string "_marmota:marmota" --add-string "_oi:eu sou o Jeff, prazer" 'L#_oi;L#_42;C#tuple;L#_marmota;C#tuple;C#second;C#print;!' || echo
+
+read -p "exemplo de chamada do BCB: print(print(1) + print(2)) " &&
+./bcb.sh --add-int "_1:1" --add-int "_2:2" 'L#_1;C#print;L#_2;C#print;C#add;C#print;!' || echo
