@@ -95,17 +95,58 @@ function extract_int() {
     echo "${1:1}"
 }
 
-function extract_first_element_tuple() {
+function extract_X_element_tuple() {
     local TUPLE="$1"
-    local TUPLE_LEN=${#TUPLE}
-    local first=''
+    local firstOrSecond="$2"
+    local -i TUPLE_LEN=${#TUPLE}
+    local -i level=0
+    local c
     local -i i
     for (( i=0; i < TUPLE_LEN; i++ )) do
-        # podemos encontrar:
-        #   uma string, indicada com $, seguida de " até o " correspondente, com \ para escape
-        #   um número, 
-        echo "deixa pro futuro"
+        c="${TUPLE:$i:1}"
+        if [ "$c" = '$' ]; then
+            # SKIP STRING
+            # skipping the $", search for the closing "
+            for (( i+=2 ; i < TUPLE_LEN; i++ )) do
+                c="${TUPLE:$i:1}"
+                if [ "$c" = '\' ]; then
+                    # if sca[e, ignore next char
+                    i+=1
+                elif [ "$c" = '"' ]; then
+                    # closing ", breaking loop
+                    break
+                fi
+            done
+        elif [ "$c" = '(' ]; then
+            level+=1
+        elif [ "$c" = ')' ]; then
+            level+=-1
+        elif [ "$level" = 1 -a "$c" = ',' ]; then
+            # ACHOU!
+            if [ "${firstOrSecond}" = first ]; then
+                local -i x
+                x=$i-1
+                echo "${TUPLE:1:$x}"
+            else
+                local -i x
+                x=$i+1
+                local -i end
+                end=$TUPLE_LEN-$x-1
+                echo "${TUPLE:$x:$end}"
+            fi
+            return
+        fi
     done
+}
+
+function extract_first_element_tuple() {
+    local TUPLE="$1"
+    extract_X_element_tuple "$TUPLE" first
+}
+
+function extract_second_element_tuple() {
+    local TUPLE="$1"
+    extract_X_element_tuple "$TUPLE" second
 }
 
 function tuple() {
@@ -114,7 +155,6 @@ function tuple() {
 
     echo "($LHS,$RHS)"
 }
-
 
 function lesser_than() {
     local -i LHS=`extract_int "$1"`
