@@ -79,8 +79,12 @@ function extract_type() {
     esac
 }
 
-function print_tuple() {
-    echo "pro jeff do futuro"
+function string_representation_tuple() {
+    local TUPLE="$1"
+    local LHS=`extract_first_element_tuple "${TUPLE}"`
+    local RHS=`extract_second_element_tuple "${TUPLE}"`
+
+    echo "(`string_representation "$LHS"`,`string_representation "$RHS"`)"
 }
 
 function extract_string() {
@@ -302,6 +306,7 @@ function string_representation() {
         CLOSURE) echo "<#closure>" ;;
         TRUE) echo true ;;
         FALSE) echo false ;;
+        TUPLE) string_representation_tuple "$ARG" ;;
     esac
 }
 
