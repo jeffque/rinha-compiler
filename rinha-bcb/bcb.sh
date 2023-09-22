@@ -153,6 +153,14 @@ function extract_second_element_tuple() {
     extract_X_element_tuple "$TUPLE" second
 }
 
+function first() {
+    extract_first_element_tuple "$1"
+}
+
+function second() {
+    extract_second_element_tuple "$1"
+}
+
 function tuple() {
     local LHS="$1"
     local RHS="$2"

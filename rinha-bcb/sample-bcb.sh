@@ -14,3 +14,12 @@ read -p "exemplo de chamada do BCB: print(fib(12)) " &&
 
 read -p "exemplo de chamada do BCB: 0, 1, 1, 1, _marm, X, X, X, X, print, X " &&
 ./bcb.sh --add-int "_1:1" --add-int "_0:0" --add-function '_marm:&1%L%1;L#_0;C#equal;J2;L#_1;G1;L#_marm;!' 'L#_0;L#_1;L#_1;L#_1;L#_marm;X;X;X;X;L#print;X;!' || echo
+
+read -p "exemplo de chamada do BCB: print de first de ((\$\"eu sou o Jeff, prazer\",#42),\$\"marmota\") " &&
+./bcb.sh --add-int "_42:42" --add-string "_marmota:marmota" --add-string "_oi:eu sou o Jeff, prazer" 'L#_oi;L#_42;C#tuple;L#_marmota;C#tuple;C#first;C#print;!' || echo
+
+read -p "exemplo de chamada do BCB: print de second de first de ((\$\"eu sou o Jeff, prazer\",#42),\$\"marmota\") " &&
+./bcb.sh --add-int "_42:42" --add-string "_marmota:marmota" --add-string "_oi:eu sou o Jeff, prazer" 'L#_oi;L#_42;C#tuple;L#_marmota;C#tuple;C#first;C#second;C#print;!' || echo
+
+read -p "exemplo de chamada do BCB: print de second de ((\$\"eu sou o Jeff, prazer\",#42),\$\"marmota\") " &&
+./bcb.sh --add-int "_42:42" --add-string "_marmota:marmota" --add-string "_oi:eu sou o Jeff, prazer" 'L#_oi;L#_42;C#tuple;L#_marmota;C#tuple;C#second;C#print;!' || echo
