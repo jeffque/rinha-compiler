@@ -84,7 +84,7 @@ function string_representation_tuple() {
     local LHS=`extract_first_element_tuple "${TUPLE}"`
     local RHS=`extract_second_element_tuple "${TUPLE}"`
 
-    echo "(`string_representation "$LHS"`,`string_representation "$RHS"`)"
+    echo "(`string_representation "$LHS"`, `string_representation "$RHS"`)"
 }
 
 function extract_string() {
