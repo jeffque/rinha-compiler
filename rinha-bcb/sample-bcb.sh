@@ -6,6 +6,10 @@ function msg_and_bcb() {
     read -p "$msg " && ./bcb.sh "$@" || { echo; echo; }
 }
 
+function _msg_and_bcb() {
+    echo "skipping <$1>..."
+}
+
 msg_and_bcb "imprimir um nome" \
     --add-literal "_true:T" --add-string '_nome: jeff que' --stack-dump --name-dump 'L#_nome;C#print;!'
 
