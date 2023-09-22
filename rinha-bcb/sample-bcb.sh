@@ -36,3 +36,9 @@ msg_and_bcb "print de second de ((\$\"eu sou o Jeff, prazer\",#42),\$\"marmota\"
 
 msg_and_bcb "print(print(1) + print(2))" \
     --add-int "_1:1" --add-int "_2:2" 'L#_1;C#print;L#_2;C#print;C#add;C#print;!'
+
+msg_and_bcb "função de redução" \
+    --add-function "_reduce:&3%L%1;C#first;C#first;J10;L%1;C#first;C#second;L%1;C#second;L%2;L%3;C#_reduce;C%2;G1;L%3;!" \
+    --add-literal "_true:T" --add-literal "_false:F" \
+    --add-int "_0:0" --add-int "_1:1" --add-int "_2:2" --add-int "_3:3" --add-int "_4:4" \
+    'L#_true;L#_1;C#tuple;L#_true;L#_2;C#tuple;L#_true;L#_3;C#tuple;L#_true;L#_4;C#tuple;L#_false;L#_0;C#tuple;C#tuple;C#tuple;C#tuple;C#tuple;L#add;L#_0;C#_reduce;C#print;!'
