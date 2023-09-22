@@ -293,7 +293,7 @@ function or() {
     fi
 }
 
-function print() {
+function string_representation() {
     local ARG="$1"
     local type=`extract_type "$ARG"`
     case $type in
@@ -302,8 +302,12 @@ function print() {
         CLOSURE) echo "<#closure>" ;;
         TRUE) echo true ;;
         FALSE) echo false ;;
-        TUPLE) print_tuple "$ARG" ;;
-    esac >&3
+    esac
+}
+
+function print() {
+    local result="`string_representation "$1"`"
+    echo "$result" >&3
     echo "#0"
 }
 
