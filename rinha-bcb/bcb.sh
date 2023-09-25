@@ -389,7 +389,7 @@ function get_position_by_name() {
 
 function stack_dump() {
     local -i i
-    local -i STACK_POINTER=$1
+    local -i STACK_POINTER=${1:-${#STACK[@]}}
 
     for (( i=0; i<STACK_POINTER; i++ )) do
         echo "STACK[$i]:${STACK[$i]}"
