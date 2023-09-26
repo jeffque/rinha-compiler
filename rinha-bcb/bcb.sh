@@ -3,6 +3,8 @@
 declare -a STACK
 declare -a NAME
 
+declare REGISTER
+
 function add_constant_literal() {
     local cte="$1"
     local -i pos=${#STACK[@]}
@@ -153,90 +155,101 @@ function extract_second_element_tuple() {
     extract_X_element_tuple "$TUPLE" second
 }
 
+# function
 function first() {
-    extract_first_element_tuple "$1"
+    REGISTER=`extract_first_element_tuple "$1"`
 }
 
+# function
 function second() {
-    extract_second_element_tuple "$1"
+    REGISTER=`extract_second_element_tuple "$1"`
 }
 
+# function
 function tuple() {
     local LHS="$1"
     local RHS="$2"
 
-    echo "($LHS,$RHS)"
+    REGISTER="($LHS,$RHS)"
 }
 
+# function
 function lesser_than() {
     local -i LHS=`extract_int "$1"`
     local -i RHS=`extract_int "$2"`
 
     if [ "$LHS" -lt "$RHS" ]; then
-        echo T
+        REGISTER=T
     else
-        echo F
+        REGISTER=F
     fi
 }
 
+# function
 function lesser_equal() {
     local -i LHS=`extract_int "$1"`
     local -i RHS=`extract_int "$2"`
 
     if [ "$LHS" -le "$RHS" ]; then
-        echo T
+        REGISTER=T
     else
-        echo F
+        REGISTER=F
     fi
 }
 
+# function
 function greater_than() {
     local -i LHS=`extract_int "$1"`
     local -i RHS=`extract_int "$2"`
 
     if [ "$LHS" -lt "$RHS" ]; then
-        echo T
+        REGISTER=T
     else
-        echo F
+        REGISTER=F
     fi
 }
 
+# function
 function greater_equal() {
     local -i LHS=`extract_int "$1"`
     local -i RHS=`extract_int "$2"`
 
     if [ "$LHS" -ge "$RHS" ]; then
-        echo T
+        REGISTER=T
     else
-        echo F
+        REGISTER=F
     fi
 }
 
+# function
 function subtract() {
     local LHS=`extract_int "$1"`
     local RHS=`extract_int "$2"`
-    echo "#$(( LHS - RHS ))"
+    REGISTER="#$(( LHS - RHS ))"
 }
 
+# function
 function multiply() {
     local LHS=`extract_int "$1"`
     local RHS=`extract_int "$2"`
-    echo "#$(( LHS * RHS ))"
+    REGISTER="#$(( LHS * RHS ))"
 }
 
+# function
 function division() {
     local LHS=`extract_int "$1"`
     local RHS=`extract_int "$2"`
-    echo "#$(( LHS / RHS ))"
+    REGISTER="#$(( LHS / RHS ))"
 }
 
-
+# function
 function remainder() {
     local LHS=`extract_int "$1"`
     local RHS=`extract_int "$2"`
-    echo "#$(( LHS % RHS ))"
+    REGISTER="#$(( LHS % RHS ))"
 }
 
+# function
 function add() {
     local LHS="$1"
     local RHS="$2"
@@ -255,53 +268,57 @@ function add() {
         RHS=`extract_string "$RHS"`
     fi
     if [ $tl = INT -a $tr = INT ]; then
-        echo "#$(( LHS + RHS ))"
+        REGISTER="#$(( LHS + RHS ))"
     else
-        echo "\$\"$LHS$RHS\""
+        REGISTER="\$\"$LHS$RHS\""
     fi
 }
 
+# function
 function equal() {
     local LHS="$1"
     local RHS="$2"
 
     if [ "$LHS" = "$RHS" ]; then
-        echo T
+        REGISTER=T
     else
-        echo F
+        REGISTER=F
     fi
 }
 
+# function
 function nequal() {
     local LHS="$1"
     local RHS="$2"
 
     if [ "$LHS" = "$RHS" ]; then
-        echo T
+        REGISTER=T
     else
-        echo F
+        REGISTER=F
     fi
 }
 
+# function
 function and() {
     local LHS="$1"
     local RHS="$2"
 
     if [ "$LHS" = T -a "$RHS" = T ]; then
-        echo T
+        REGISTER=T
     else
-        echo F
+        REGISTER=F
     fi
 }
 
+# function
 function or() {
     local LHS="$1"
     local RHS="$2"
 
     if [ "$LHS" = T -o "$RHS" = T ]; then
-        echo T
+        REGISTER=T
     else
-        echo F
+        REGISTER=F
     fi
 }
 
@@ -318,10 +335,11 @@ function string_representation() {
     esac
 }
 
+# function
 function print() {
     local result="`string_representation "$1"`"
     echo "$result" >&3
-    echo "$1"
+    REGISTER="$1"
 }
 
 function bytecode_recog() {
@@ -411,7 +429,8 @@ function run_global() {
         ARGUMENTS[$i]="${STACK[$j]}"
     done
 
-    RET=`$FCALLED "${ARGUMENTS[@]}"`
+    $FCALLED "${ARGUMENTS[@]}"
+    RET="$REGISTER"
 }
 
 function run() {
