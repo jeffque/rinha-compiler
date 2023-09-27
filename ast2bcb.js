@@ -1,6 +1,7 @@
 const fs = require('fs');
 
-const ast = JSON.parse(fs.readFileSync('rinha.ast', 'utf8'))
+const astSource = process.env.AST_SOURCE ?? 'rinha.ast'
+const ast = JSON.parse(fs.readFileSync(astSource, 'utf8'))
 const constantPool = []; // tipo, valor, apelido
 
 const createContext = (context) => {
