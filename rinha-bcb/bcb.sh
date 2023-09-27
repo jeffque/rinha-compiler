@@ -331,7 +331,7 @@ function string_representation() {
 # function
 function print() {
     local result="`string_representation "$1"`"
-    echo "$result" >&3
+    echo "$result"
     REGISTER="$1"
 }
 
@@ -390,11 +390,11 @@ function get_position_by_name() {
 
     for (( i=0; i<STACK_POINTER; i++ )) do
         if [ "${NAME[$i]}" = "$desired_name" ]; then
-            echo $i
+            REGISTER=$i
             return
         fi
     done
-    echo -1
+    REGISTER=-1
     return 1
 }
 
@@ -676,7 +676,8 @@ function bind_values_by_map() {
                     INSTRUCTION_POINTER+=1
                 done
                 if [ "$region" = GLOBAL ]; then
-                    buff=`get_position_by_name "$buff"`
+                    get_position_by_name "$buff"
+                    buff=$REGISTER
                 fi
 
                 assembled+="L${region_mnemonics}${buff};"
@@ -698,7 +699,8 @@ function bind_values_by_map() {
                     INSTRUCTION_POINTER+=1
                 done
                 if [ "$region" = GLOBAL ]; then
-                    buff=`get_position_by_name "$buff"`
+                    get_position_by_name "$buff"
+                    buff=$REGISTER
                 fi
 
                 assembled+="C${region_mnemonics}${buff};"
@@ -813,7 +815,8 @@ while [ $# -gt 0 ]; do
                 exit 1
             fi
             add_constant_literal "$literal" "$mangled_name"
-            add_later_rewrite[${#add_later_rewrite[@]}]=`get_position_by_name "$mangled_name"`
+            get_position_by_name "$mangled_name"
+            add_later_rewrite[${#add_later_rewrite[@]}]=$REGISTER
             ;;
         --add-string)
             cli_arg="$1"
@@ -879,4 +882,4 @@ fi
 
 PROGRAM=`bind_values_by_map "$PROGRAM"`
 
-run ${#STACK[@]} ${#STACK[@]} "$PROGRAM" 3>&1
+run ${#STACK[@]} ${#STACK[@]} "$PROGRAM"
