@@ -22,6 +22,14 @@ const createContext = (context) => {
     }
 }
 
+const yieldAnonFunctionName = (() => {
+    let n = 0
+    return () => {
+        n++
+        return "_+anon+" + n
+    }
+})()
+
 const createFunction = (nParams, params) => {
     f = {
         type: 'Func',
@@ -29,7 +37,7 @@ const createFunction = (nParams, params) => {
         nCaptures: 0,
         argsName: params.argsName ?? [],
         table: [],
-        unmangledName: params.name,
+        unmangledName: params.name ?? yieldAnonFunctionName(),
         context: params.context,
         bytecodes: [],
         toString: function() {
@@ -171,10 +179,9 @@ const functionDeclaration = (expr, functionContext) => {
     const name = getFunctionNameIfGlobal(functionContext)
     const newFunc = createFunction(nParams, {argsName: argsName, context: functionContext, name: name})
     const alias = addConstToPool(newFunc, 'Func') // para obter chamadas recursivas
-    if (name) {
-        functionContext.pushBytecode(`L#${alias};`)
-    }
+
     readExpression(expr.value, newFunc)
+    functionContext.pushBytecode(`L#${alias};`)
 }
 
 const intDeclaration = (expr, functionContext) => {
