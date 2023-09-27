@@ -72,19 +72,21 @@ add_to_stack_binary_external_functions
 function extract_type() {
     local dif="${1::1}"
     case "$dif" in
-        '#') echo "INT" ;;
-        '$') echo "STR" ;;
-        '(') echo TUPLE ;; 
-        T) echo TRUE ;;
-        F) echo FALSE ;;
-        *) echo CLOSURE ;;
+        '#') REGISTER="INT" ;;
+        '$') REGISTER="STR" ;;
+        '(') REGISTER=TUPLE ;; 
+        T) REGISTER=TRUE ;;
+        F) REGISTER=FALSE ;;
+        *) REGISTER=CLOSURE ;;
     esac
 }
 
 function string_representation_tuple() {
     local TUPLE="$1"
-    local LHS=`extract_first_element_tuple "${TUPLE}"`
-    local RHS=`extract_second_element_tuple "${TUPLE}"`
+    extract_first_element_tuple "${TUPLE}"
+    local LHS="$REGISTER"
+    extract_second_element_tuple "${TUPLE}"
+    local RHS="$REGISTER"
 
     echo "(`string_representation "$LHS"`, `string_representation "$RHS"`)"
 }
@@ -94,11 +96,11 @@ function extract_string() {
     RET="${RET%\"}"
     RET="${RET//\\\\/\\}"
     RET="${RET//\\\"/\"}"
-    echo "$RET"
+    REGISTER="$RET"
 }
 
 function extract_int() {
-    echo "${1:1}"
+    REGISTER="${1:1}"
 }
 
 function extract_X_element_tuple() {
@@ -132,13 +134,13 @@ function extract_X_element_tuple() {
             if [ "${firstOrSecond}" = first ]; then
                 local -i x
                 x=$i-1
-                echo "${TUPLE:1:$x}"
+                REGISTER="${TUPLE:1:$x}"
             else
                 local -i x
                 x=$i+1
                 local -i end
                 end=$TUPLE_LEN-$x-1
-                echo "${TUPLE:$x:$end}"
+                REGISTER="${TUPLE:$x:$end}"
             fi
             return
         fi
@@ -157,12 +159,12 @@ function extract_second_element_tuple() {
 
 # function
 function first() {
-    REGISTER=`extract_first_element_tuple "$1"`
+    extract_first_element_tuple "$1"
 }
 
 # function
 function second() {
-    REGISTER=`extract_second_element_tuple "$1"`
+    extract_second_element_tuple "$1"
 }
 
 # function
@@ -173,79 +175,73 @@ function tuple() {
     REGISTER="($LHS,$RHS)"
 }
 
-# function
-function lesser_than() {
-    local -i LHS=`extract_int "$1"`
-    local -i RHS=`extract_int "$2"`
+function compare_those() {
+    extract_int "$1"
+    local -i LHS="$REGISTER"
+    extract_int "$2"
+    local -i RHS="$REGISTER"
+    local COMPARATOR="$3"
 
-    if [ "$LHS" -lt "$RHS" ]; then
+    if [ "$LHS" "$COMPARATOR" "$RHS" ]; then
         REGISTER=T
     else
         REGISTER=F
     fi
+}
+
+# function
+function lesser_than() {
+    compare_those "$1" "$2" -lt
 }
 
 # function
 function lesser_equal() {
-    local -i LHS=`extract_int "$1"`
-    local -i RHS=`extract_int "$2"`
-
-    if [ "$LHS" -le "$RHS" ]; then
-        REGISTER=T
-    else
-        REGISTER=F
-    fi
+    compare_those "$1" "$2" -le
 }
 
 # function
 function greater_than() {
-    local -i LHS=`extract_int "$1"`
-    local -i RHS=`extract_int "$2"`
-
-    if [ "$LHS" -lt "$RHS" ]; then
-        REGISTER=T
-    else
-        REGISTER=F
-    fi
+    compare_those "$1" "$2" -gt
 }
 
 # function
 function greater_equal() {
-    local -i LHS=`extract_int "$1"`
-    local -i RHS=`extract_int "$2"`
-
-    if [ "$LHS" -ge "$RHS" ]; then
-        REGISTER=T
-    else
-        REGISTER=F
-    fi
+    compare_those "$1" "$2" -ge
 }
 
 # function
 function subtract() {
-    local LHS=`extract_int "$1"`
-    local RHS=`extract_int "$2"`
+    extract_int "$1"
+    local -i LHS="$REGISTER"
+    extract_int "$2"
+    local -i RHS="$REGISTER"
     REGISTER="#$(( LHS - RHS ))"
 }
 
 # function
 function multiply() {
-    local LHS=`extract_int "$1"`
-    local RHS=`extract_int "$2"`
+    extract_int "$1"
+    local -i LHS="$REGISTER"
+    extract_int "$2"
+    local -i RHS="$REGISTER"
     REGISTER="#$(( LHS * RHS ))"
 }
 
 # function
 function division() {
-    local LHS=`extract_int "$1"`
-    local RHS=`extract_int "$2"`
+    extract_int "$1"
+    local -i LHS="$REGISTER"
+    extract_int "$2"
+    local -i RHS="$REGISTER"
     REGISTER="#$(( LHS / RHS ))"
 }
 
 # function
 function remainder() {
-    local LHS=`extract_int "$1"`
-    local RHS=`extract_int "$2"`
+    extract_int "$1"
+    local -i LHS="$REGISTER"
+    extract_int "$2"
+    local -i RHS="$REGISTER"
     REGISTER="#$(( LHS % RHS ))"
 }
 
@@ -254,18 +250,24 @@ function add() {
     local LHS="$1"
     local RHS="$2"
 
-    local tl=`extract_type "$LHS"`
-    local tr=`extract_type "$RHS"`
+    extract_type "$LHS"
+    local tl="$REGISTER"
+    extract_type "$RHS"
+    local tr="$REGISTER"
 
     if [ $tl = INT ]; then
-        LHS=`extract_int "$LHS"`
+        extract_int "$LHS"
+        LHS="$REGISTER"
     else
-        LHS=`extract_string "$LHS"`
+        extract_string "$LHS"
+        LHS="$REGISTER"
     fi
     if [ $tr = INT ]; then
-        RHS=`extract_int "$RHS"`
+        extract_int "$RHS"
+        RHS="$REGISTER"
     else
-        RHS=`extract_string "$RHS"`
+        extract_string "$RHS"
+        RHS="$REGISTER"
     fi
     if [ $tl = INT -a $tr = INT ]; then
         REGISTER="#$(( LHS + RHS ))"
@@ -276,26 +278,12 @@ function add() {
 
 # function
 function equal() {
-    local LHS="$1"
-    local RHS="$2"
-
-    if [ "$LHS" = "$RHS" ]; then
-        REGISTER=T
-    else
-        REGISTER=F
-    fi
+    compare_those "$1" "$2" =
 }
 
 # function
 function nequal() {
-    local LHS="$1"
-    local RHS="$2"
-
-    if [ "$LHS" = "$RHS" ]; then
-        REGISTER=T
-    else
-        REGISTER=F
-    fi
+    compare_those "$1" "$2" '!='
 }
 
 # function
@@ -324,10 +312,15 @@ function or() {
 
 function string_representation() {
     local ARG="$1"
-    local type=`extract_type "$ARG"`
+
+    extract_type "$ARG"
+    local type="$REGISTER"
     case $type in
         INT) echo "${ARG:1}" ;;
-        STR) echo `extract_string "$ARG"` ;;
+        STR)
+            extract_string "$ARG"
+            echo "$REGISTER"
+            ;;
         CLOSURE) echo "<#closure>" ;;
         TRUE) echo true ;;
         FALSE) echo false ;;
@@ -345,22 +338,22 @@ function print() {
 function bytecode_recog() {
     local bytecode="$1"
     case "$bytecode" in
-        L) echo LOAD ;;
-        C) echo CALL ;;
-        J) echo JUMP_IFNOT ;;
-        G) echo JUMP ;;
-        X) echo EXEC ;;
-        !) echo END ;;
-        *) echo ERROR ;;
+        L) REGISTER=LOAD ;;
+        C) REGISTER=CALL ;;
+        J) REGISTER=JUMP_IFNOT ;;
+        G) REGISTER=JUMP ;;
+        X) REGISTER=EXEC ;;
+        !) REGISTER=END ;;
+        *) REGISTER=ERROR ;;
     esac
 }
 
 function region_recog() {
     local region="$1"
     case "$region" in
-        '#') echo GLOBAL ;;
-        %) echo LOCAL ;;
-        *) echo ERROR ;;
+        '#') REGISTER=GLOBAL ;;
+        %) REGISTER=LOCAL ;;
+        *) REGISTER=ERROR ;;
     esac
 }
 
@@ -454,11 +447,13 @@ function run() {
         case $STATE_BYTECODE in
             START)
                 buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
-                STATE_BYTECODE=`bytecode_recog $buff`
+                bytecode_recog $buff
+                STATE_BYTECODE="$REGISTER"
                 ;;
             LOAD)
                 buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
-                region=`region_recog $buff`
+                region_recog $buff
+                region="$REGISTER"
                 INSTRUCTION_POINTER+=1
 
                 if [ "$region" = ERROR ]; then
@@ -481,7 +476,8 @@ function run() {
                 ;;
             CALL)
                 buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
-                region=`region_recog $buff`
+                region_recog $buff
+                region="$REGISTER"
                 INSTRUCTION_POINTER+=1
 
                 if [ "$region" = ERROR ]; then
@@ -658,13 +654,15 @@ function bind_values_by_map() {
     for (( INSTRUCTION_POINTER=0 ; INSTRUCTION_POINTER < EOP; INSTRUCTION_POINTER++ )) do
         buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
         INSTRUCTION_POINTER+=1
-        STATE_BYTECODE=`bytecode_recog $buff`
+        bytecode_recog $buff
+        STATE_BYTECODE="$REGISTER"
         case $STATE_BYTECODE in
             LOAD)
                 local region_mnemonics
                 region_mnemonics="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                 INSTRUCTION_POINTER+=1
-                region=`region_recog $region_mnemonics`
+                region_recog $region_mnemonics
+                region="$REGISTER"
 
                 if [ "$region" = ERROR ]; then
                     return 1
@@ -685,7 +683,8 @@ function bind_values_by_map() {
                 local region_mnemonics
                 region_mnemonics="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                 INSTRUCTION_POINTER+=1
-                region=`region_recog $region_mnemonics`
+                region_recog $region_mnemonics
+                region="$REGISTER"
 
                 if [ "$region" = ERROR ]; then
                     return 1
