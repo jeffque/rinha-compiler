@@ -112,13 +112,14 @@ function extract_X_element_tuple() {
     local -i i
     for (( i=0; i < TUPLE_LEN; i++ )) do
         c="${TUPLE:$i:1}"
+
         if [ "$c" = '$' ]; then
             # SKIP STRING
             # skipping the $", search for the closing "
             for (( i+=2 ; i < TUPLE_LEN; i++ )) do
                 c="${TUPLE:$i:1}"
                 if [ "$c" = '\' ]; then
-                    # if sca[e, ignore next char
+                    # if scape, ignore next char
                     i+=1
                 elif [ "$c" = '"' ]; then
                     # closing ", breaking loop
@@ -353,6 +354,7 @@ function region_recog() {
     case "$region" in
         '#') REGISTER=GLOBAL ;;
         %) REGISTER=LOCAL ;;
+        +) REGISTER=LITERAL ;;
         *) REGISTER=ERROR ;;
     esac
 }
@@ -461,16 +463,69 @@ function run() {
                     continue
                 fi
                 buff=''
-                while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
-                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
-                    INSTRUCTION_POINTER+=1
-                done
+                if [ "$region" = LITERAL ]; then
+                    if [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '#' ]; then
+                        while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
+                            buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                            INSTRUCTION_POINTER+=1
+                        done
+                    elif [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '$' ]; then
+                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:2}"
+                        INSTRUCTION_POINTER+=2
+                        while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != '"' ]; do
+                            if [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '\' ]; then
+                                buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                                INSTRUCTION_POINTER+=1
+                            fi
+                            buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                            INSTRUCTION_POINTER+=1
+                        done
+                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                        INSTRUCTION_POINTER+=1
+                    elif [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '(' ]; then
+                        local -i level=1
+                        
+                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                        INSTRUCTION_POINTER+=1
+                        while [ "$level" != '0' ]; do
+                            local charLido="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                            if [ "$charLido" = '(' ]; then
+                                level+=1
+                            elif [ "$charLido" = ')' ]; then
+                                level+=-1
+                            elif [ "$charLido" = '"' ]; then
+                                buff+="$charLido"
+                                INSTRUCTION_POINTER+=1
+                                charLido="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                                while [ "${charLido}" != '"' ]; do
+                                    if [ "${charLido}" = '\' ]; then
+                                        buff+="${charLido}"
+                                        INSTRUCTION_POINTER+=1
+                                        charLido="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                                    fi
+                                    buff+="${charLido}"
+                                    INSTRUCTION_POINTER+=1
+                                    charLido="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                                done
+                            fi
+                            buff+="$charLido"
+                            INSTRUCTION_POINTER+=1
+                        done
+                    fi
+                    
+                    STACK[${STACK_POINTER}]="$buff"
+                else
+                    while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
+                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                        INSTRUCTION_POINTER+=1
+                    done
 
-                if [ "$region" = LOCAL ]; then
-                    buff=$(( $buff + ${STACK_BASE} ))
+                    if [ "$region" = LOCAL ]; then
+                        buff=$(( $buff + ${STACK_BASE} ))
+                    fi
+                    STACK[${STACK_POINTER}]="${STACK[$buff]}"
                 fi
 
-                STACK[${STACK_POINTER}]="${STACK[$buff]}"
                 STACK_POINTER+=1
                 STATE_BYTECODE=START
                 ;;
@@ -671,13 +726,64 @@ function bind_values_by_map() {
                 fi
 
                 buff=''
-                while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
-                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
-                    INSTRUCTION_POINTER+=1
-                done
-                if [ "$region" = GLOBAL ]; then
-                    get_position_by_name "$buff"
-                    buff=$REGISTER
+                if [ "$region" = LITERAL ]; then
+                    if [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '#' ]; then
+                        while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
+                            buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                            INSTRUCTION_POINTER+=1
+                        done
+                    elif [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '$' ]; then
+                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:2}"
+                        INSTRUCTION_POINTER+=2
+                        while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != '"' ]; do
+                            if [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '\' ]; then
+                                buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                                INSTRUCTION_POINTER+=1
+                            fi
+                            buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                            INSTRUCTION_POINTER+=1
+                        done
+                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                        INSTRUCTION_POINTER+=1
+                    elif [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '(' ]; then
+                        local -i level=1
+                        
+                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                        INSTRUCTION_POINTER+=1
+                        while [ "$level" != '0' ]; do
+                            local charLido="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                            if [ "$charLido" = '(' ]; then
+                                level+=1
+                            elif [ "$charLido" = ')' ]; then
+                                level+=-1
+                            elif [ "$charLido" = '"' ]; then
+                                buff+="$charLido"
+                                INSTRUCTION_POINTER+=1
+                                charLido="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                                while [ "${charLido}" != '"' ]; do
+                                    if [ "${charLido}" = '\' ]; then
+                                        buff+="${charLido}"
+                                        INSTRUCTION_POINTER+=1
+                                        charLido="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                                    fi
+                                    buff+="${charLido}"
+                                    INSTRUCTION_POINTER+=1
+                                    charLido="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                                done
+                            fi
+                            buff+="$charLido"
+                            INSTRUCTION_POINTER+=1
+                        done
+                    fi
+                else
+                    while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
+                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+                        INSTRUCTION_POINTER+=1
+                    done
+                    if [ "$region" = GLOBAL ]; then
+                        get_position_by_name "$buff"
+                        buff=$REGISTER
+                    fi
                 fi
 
                 assembled+="L${region_mnemonics}${buff};"
