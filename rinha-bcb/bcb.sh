@@ -371,7 +371,7 @@ function extract_args_quant() {
             *) break ;;
         esac
     done
-    echo "$buff"
+    REGISTER="$buff"
 }
 
 function name_dump() {
@@ -499,7 +499,8 @@ function run() {
                     STATE_BYTECODE=ERROR
                     continue
                 fi
-                nparams=`extract_args_quant "$fcalled"`
+                extract_args_quant "$fcalled"
+                nparams="$REGISTER"
                 FUTURE_STACK_BASE+=-$nparams
                 buff="${fcalled#&$nparams}"
 
@@ -521,7 +522,8 @@ function run() {
                     STATE_BYTECODE=ERROR
                     continue
                 fi
-                nparams=`extract_args_quant "$fcalled"`
+                extract_args_quant "$fcalled"
+                nparams="$REGISTER"
                 FUTURE_STACK_BASE+=-$nparams
                 buff="${fcalled#&$nparams}"
 
