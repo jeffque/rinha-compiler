@@ -118,6 +118,20 @@ const addConstToPool = (value, t) => {
                 return apelido;
             }
         }
+    } else if (t == 'Bool') {
+        for (let {tipo, valor, apelido} of constantPool) {
+            if (tipo == t && valor == value) {
+                return apelido;
+            }
+        }
+        let apelido
+        if (value == "T") {
+            apelido = "_T"
+        } else {
+            apelido = "_F"
+        }
+        constantPool.push({tipo: t, valor: value, apelido: apelido})
+        return apelido
     } else {
         for (let {tipo, valor, apelido} of constantPool) {
             if (tipo == t && valor == value) {
@@ -182,6 +196,20 @@ const functionDeclaration = (expr, functionContext) => {
 
     readExpression(expr.value, newFunc)
     functionContext.pushBytecode(`L#${alias};`)
+}
+
+const boolDeclaration = (expr, functionContext) => {
+    const value = expr.value + "";
+    let bc;
+    if (value == 'true') {
+        const alias = addConstToPool("T", 'Bool')
+        bc = "L#_T;"
+    } else {
+        const alias = addConstToPool("F", 'Bool')
+        bc = "L#_F;"
+    }
+    
+    functionContext.pushBytecode(bc)
 }
 
 const intDeclaration = (expr, functionContext) => {
@@ -331,7 +359,8 @@ const readExpression =  (expr, functionContext) => {
         // tipos
         'Function': functionDeclaration,
         'Str': strDeclaration,
-        'Int': intDeclaration
+        'Int': intDeclaration,
+        'Bool': boolDeclaration,
     };
     const shouldCall = kind2action[expr.kind] ?? placeholderDeclaration;
     return shouldCall(expr, functionContext)
@@ -353,6 +382,9 @@ const toBcbCli = (c) => {
     }
     if (c.tipo == 'Int') {
         return ["--add-int", `${c.apelido}:${c.valor}`]
+    }
+    if (c.tipo == 'Bool') {
+        return ["--add-literal", `${c.apelido}:${c.valor}`]
     }
 }
 
