@@ -4,10 +4,23 @@ const astSource = process.env.AST_SOURCE ?? 'rinha.ast'
 const ast = JSON.parse(fs.readFileSync(astSource, 'utf8'))
 const constantPool = []; // tipo, valor, apelido
 
+const obtainFunction = (context) => {
+    while (context) {
+        if (context.type == "Func") {
+            return context;
+        }
+        context = context.context
+    }
+}
+
+const obtainFunctionTable = (context) => {
+    return obtainFunction(context)?.table
+}
+
 const createContext = (context) => {
     return {
         type: 'Blob',
-        table: [],
+        table: obtainFunctionTable(context),
         context: context,
         bytecodes: [],
         toString: function() {
@@ -16,9 +29,7 @@ const createContext = (context) => {
         pushBytecode(bc) {
             this.bytecodes.push(bc)
         },
-        addMapping(name, bytecodes) {
-            this.table.push({name, bytecodes})
-        }
+        addMapping: obtainFunction(context).addMapping
     }
 }
 
@@ -31,6 +42,7 @@ const yieldAnonFunctionName = (() => {
 })()
 
 const createFunction = (nParams, params) => {
+    let paramsPos = 1;
     f = {
         type: 'Func',
         nParams: nParams,
@@ -51,14 +63,19 @@ const createFunction = (nParams, params) => {
             this.bytecodes.push(bc)
         },
         addMapping(name, bytecodes) {
-            this.table.push({name, bytecodes})
+            for (bc of bytecodes) {
+                this.pushBytecode(bc)
+            }
+            const idx = paramsPos
+            paramsPos++
+            this.table.push({name, bytecodes: [`L%${idx};`]})
         }
     }
 
     if (params.argsName) {
         let i = 1
         for (p of params.argsName) {
-            f.addMapping(p, [`L%${i};`])
+            f.addMapping(p, [])
             i++
         }
     }
@@ -78,10 +95,8 @@ const createLet = (name, params) => {
         pushBytecode(bc) {
             this.bytecodes.push(bc)
         },
-        addMapping(name, bytecodes) {
-            this.table.push({name, bytecodes})
-        },
-        context: params.context
+        addMapping: obtainFunction(params.context).addMapping,
+        context: obtainFunction(params.context)
     }
 }
 
