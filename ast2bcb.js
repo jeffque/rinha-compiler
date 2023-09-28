@@ -251,6 +251,28 @@ const callDeclaration = (expr, functionContext) => {
     }
 }
 
+const tupleDeclaration = (expr, functionContext) => {
+    const firstContext = createContext(functionContext)
+    readExpression(expr.first, firstContext)
+    
+    const secondContext = createContext(functionContext)
+    readExpression(expr.second, secondContext)
+    for (let bc of [...firstContext.bytecodes, ...secondContext.bytecodes]) {
+        functionContext.pushBytecode(bc);
+    }
+    functionContext.pushBytecode("C#tuple;")
+}
+
+const firstDeclaration = (expr, functionContext) => {
+    readExpression(expr.value, functionContext)
+    functionContext.pushBytecode("C#first;")
+}
+
+const secondDeclaration = (expr, functionContext) => {
+    readExpression(expr.value, functionContext)
+    functionContext.pushBytecode("C#second;")
+}
+
 /*
 L#_1;L%1;L#_1;C#subtract;L#_1;L%2;L#_1;C#subtract;X;L#_1;L%1;L#_1;C#subtract;X;C#add;!'
 combination(n - 1, k - 1) + combination(n - 1, k)
@@ -301,6 +323,10 @@ const readExpression =  (expr, functionContext) => {
         'If': ifDeclaration,
         'Var': varDeclaration,
         'Call': callDeclaration,
+
+        "Tuple": tupleDeclaration,
+        "First": firstDeclaration,
+        "Second": secondDeclaration,
 
         // tipos
         'Function': functionDeclaration,
