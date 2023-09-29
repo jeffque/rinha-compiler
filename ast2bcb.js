@@ -413,12 +413,13 @@ if (!deuBom) {
     return
 }
 const { spawn } = require('node:child_process');
+const { stdout, stderr } = require('process');
 const ls = spawn('rinha-bcb/bcb.sh', args);
 
 ls.stdout.on('data', (data) => {
-    console.log(`${data}`)
+    stdout.write(data)
 });
 
 ls.stderr.on('data', (data) => {
-    console.error(`${data}`)
+    stderr.write(`${data}`)
 });
