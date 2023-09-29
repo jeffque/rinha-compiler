@@ -522,11 +522,13 @@ function run() {
                     
                     STACK[${STACK_POINTER}]="$buff"
                 else
+                    local -i start=$INSTRUCTION_POINTER
+                    local -i cnt=0
                     while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
-                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                         INSTRUCTION_POINTER+=1
+                        cnt+=1
                     done
-
+                    buff="${LOCAL_FUNCTION:$start:$cnt}"
                     if [ "$region" = LOCAL ]; then
                         buff=$(( $buff + ${STACK_BASE} ))
                     fi
@@ -548,10 +550,13 @@ function run() {
                 fi
 
                 buff=''
+                local -i start=${INSTRUCTION_POINTER}
+                local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
-                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                     INSTRUCTION_POINTER+=1
+                    cnt+=1
                 done
+                buff="${LOCAL_FUNCTION:$start:$cnt}"
                 if [ "$region" = LOCAL ]; then
                     buff=$(( $buff + ${STACK_BASE} ))
                 fi
@@ -600,11 +605,13 @@ function run() {
                 ;;
             JUMP_IFNOT)
                 buff=''
-                
+                local -i start=${INSTRUCTION_POINTER}
+                local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
-                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                     INSTRUCTION_POINTER+=1
+                    cnt+=1
                 done
+                buff="${LOCAL_FUNCTION:$start:$cnt}"
                 STACK_POINTER+=-1
                 if [ "${STACK[${STACK_POINTER}]}" != T ]; then
                     njumps="$buff"
@@ -621,11 +628,13 @@ function run() {
             JUMP)
                 buff=''
                 
+                local -i start=${INSTRUCTION_POINTER}
+                local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
-                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                     INSTRUCTION_POINTER+=1
+                    cnt+=1
                 done
-
+                buff="${LOCAL_FUNCTION:$start:$cnt}"
                 njumps="$buff"
 
                 for (( i=-1; i < njumps; INSTRUCTION_POINTER++ )) do
@@ -783,10 +792,13 @@ function bind_values_by_map() {
                         done
                     fi
                 else
+                    local -i start=${INSTRUCTION_POINTER}
+                    local -i cnt=0
                     while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
-                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                         INSTRUCTION_POINTER+=1
+                        cnt+=1
                     done
+                    buff="${LOCAL_FUNCTION:$start:$cnt}"
                     if [ "$region" = GLOBAL ]; then
                         get_position_by_name "$buff"
                         buff=$REGISTER
@@ -807,10 +819,13 @@ function bind_values_by_map() {
                 fi
 
                 buff=''
+                local -i start=${INSTRUCTION_POINTER}
+                local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
-                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                     INSTRUCTION_POINTER+=1
+                    cnt+=1
                 done
+                buff="${LOCAL_FUNCTION:$start:$cnt}"
                 if [ "$region" = GLOBAL ]; then
                     get_position_by_name "$buff"
                     buff=$REGISTER
@@ -823,21 +838,26 @@ function bind_values_by_map() {
                 ;;
             JUMP_IFNOT)
                 buff=''
-
+                local -i start=${INSTRUCTION_POINTER}
+                local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
-                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                     INSTRUCTION_POINTER+=1
+                    cnt+=1
                 done
+                buff="${LOCAL_FUNCTION:$start:$cnt}"
 
                 assembled+="J$buff;"
                 ;;
             JUMP)
                 buff=''
 
+                local -i start=${INSTRUCTION_POINTER}
+                local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
-                    buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                     INSTRUCTION_POINTER+=1
+                    cnt+=1
                 done
+                buff="${LOCAL_FUNCTION:$start:$cnt}"
 
                 assembled+="G$buff;"
                 ;;
