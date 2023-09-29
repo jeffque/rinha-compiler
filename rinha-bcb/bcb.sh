@@ -339,8 +339,7 @@ function string_representation() {
 
 # function
 function print() {
-    local result="`string_representation "$1"`"
-    echo "$result"
+    string_representation "$1"
     REGISTER="$1"
 }
 
