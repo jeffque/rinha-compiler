@@ -850,7 +850,7 @@ function bind_values_by_map() {
                 ;;
         esac
     done
-    echo "${assembled}!"
+    REGISTER="${assembled}!"
 }
 
 function help_command() {
@@ -983,7 +983,8 @@ function resolve_all_late_bind() {
         header="${raw%%\%*}%"
         raw="${raw:${#header}}"
 
-        bind="$header`bind_values_by_map "$raw"`"
+        bind_values_by_map "$raw"
+        bind="$header$REGISTER"
         STACK[$pos]="$bind"
     done
 }
@@ -994,6 +995,7 @@ if [ "$PROGRAM" = "" ]; then
     exit
 fi
 
-PROGRAM=`bind_values_by_map "$PROGRAM"`
+bind_values_by_map "$PROGRAM"
+PROGRAM="$REGISTER"
 
 run ${#STACK[@]} ${#STACK[@]} "$PROGRAM"
