@@ -279,12 +279,20 @@ function add() {
 
 # function
 function equal() {
-    compare_those "$1" "$2" =
+    if [ "$1" = "$2" ]; then
+        REGISTER=T
+    else
+        REGISTER=F
+    fi
 }
 
 # function
 function nequal() {
-    compare_those "$1" "$2" '!='
+    if [ "$1" != "$2" ]; then
+        REGISTER=T
+    else
+        REGISTER=F
+    fi
 }
 
 # function
