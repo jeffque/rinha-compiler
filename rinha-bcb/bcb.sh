@@ -728,8 +728,7 @@ function bind_values_by_map() {
         buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
         INSTRUCTION_POINTER+=1
         bytecode_recog $buff
-        STATE_BYTECODE="$REGISTER"
-        case $STATE_BYTECODE in
+        case $REGISTER in
             LOAD)
                 local region_mnemonics
                 region_mnemonics="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
