@@ -41,13 +41,18 @@ evitar misturar com nomes ds funções previamente listadas.
 
 Uma função é definida como:
 
-- externa, em que será realizado um chamado a uma linha CLI passando
-  apenas 3 tipos e variáveis (serializadas):
+- externa, em que será passada para o adapter dela apenas a posição do
+  começo da pilha
+  - a partir dessa posição se pode resgatar os `n` argumentos passados,
+    que estarão nas posições `STACK_BASE + 0`, `STACK_BASE + 1`...
+  - os objetos resgatados estarão serializados conforme seu tipo nas
+    posições da pilha
   - inteiro, no formato `#<dec>`, como `#12` representando o número 12
   - string, no formato `$"<string>"`, onde `"` e `\` podem ser escapados com `\`
   - booleano, como `T` ou `F`
   - tupla, como `(TERM,TERM)`, onde `TERM` é a serialização do termo
-  - clausura, como `?`, sem maior significância
+  - funções, no formato `&<nargs>%<bytecodes>!`  para funções internas,
+    ou `&<nargs>#<nome>;!` para funções externas
 - interna, um conjunto de byte codes.
 
 O retorno de uma função externa é na forma de uma variável serializada.

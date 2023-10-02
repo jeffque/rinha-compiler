@@ -160,28 +160,30 @@ function extract_second_element_tuple() {
 
 # function
 function first() {
-    extract_first_element_tuple "$1"
+    extract_first_element_tuple "${STACK[$1]}"
 }
 
 # function
 function second() {
-    extract_second_element_tuple "$1"
+    extract_second_element_tuple "${STACK[$1]}"
 }
 
 # function
 function tuple() {
-    local LHS="$1"
-    local RHS="$2"
+    local -i STACK_BASE="$1"
+    local LHS="${STACK[$STACK_BASE]}"
+    local RHS="${STACK[$(( STACK_BASE + 1 ))]}"
 
     REGISTER="($LHS,$RHS)"
 }
 
 function compare_those() {
-    extract_int "$1"
+    local -i STACK_BASE="$1"
+    extract_int "${STACK[$STACK_BASE]}"
     local -i LHS="$REGISTER"
-    extract_int "$2"
+    extract_int "${STACK[$(( STACK_BASE + 1 ))]}"
     local -i RHS="$REGISTER"
-    local COMPARATOR="$3"
+    local COMPARATOR="$2"
 
     if [ "$LHS" "$COMPARATOR" "$RHS" ]; then
         REGISTER=T
@@ -192,64 +194,69 @@ function compare_those() {
 
 # function
 function lesser_than() {
-    compare_those "$1" "$2" -lt
+    compare_those "$1" -lt
 }
 
 # function
 function lesser_equal() {
-    compare_those "$1" "$2" -le
+    compare_those "$1" -le
 }
 
 # function
 function greater_than() {
-    compare_those "$1" "$2" -gt
+    compare_those "$1" -gt
 }
 
 # function
 function greater_equal() {
-    compare_those "$1" "$2" -ge
+    compare_those "$1" -ge
 }
 
 # function
 function subtract() {
-    extract_int "$1"
+    local -i STACK_BASE="$1"
+    extract_int "${STACK[$STACK_BASE]}"
     local -i LHS="$REGISTER"
-    extract_int "$2"
+    extract_int "${STACK[$(( STACK_BASE + 1 ))]}"
     local -i RHS="$REGISTER"
     REGISTER="#$(( LHS - RHS ))"
 }
 
 # function
 function multiply() {
-    extract_int "$1"
+    local -i STACK_BASE="$1"
+    extract_int "${STACK[$STACK_BASE]}"
     local -i LHS="$REGISTER"
-    extract_int "$2"
+    extract_int "${STACK[$(( STACK_BASE + 1 ))]}"
     local -i RHS="$REGISTER"
     REGISTER="#$(( LHS * RHS ))"
 }
 
 # function
 function division() {
-    extract_int "$1"
+    local -i STACK_BASE="$1"
+    extract_int "${STACK[$STACK_BASE]}"
     local -i LHS="$REGISTER"
-    extract_int "$2"
+    extract_int "${STACK[$(( STACK_BASE + 1 ))]}"
     local -i RHS="$REGISTER"
     REGISTER="#$(( LHS / RHS ))"
 }
 
 # function
 function remainder() {
-    extract_int "$1"
+    local -i STACK_BASE="$1"
+    extract_int "${STACK[$STACK_BASE]}"
     local -i LHS="$REGISTER"
-    extract_int "$2"
+    extract_int "${STACK[$(( STACK_BASE + 1 ))]}"
     local -i RHS="$REGISTER"
     REGISTER="#$(( LHS % RHS ))"
 }
 
 # function
 function add() {
-    local LHS="$1"
-    local RHS="$2"
+    local -i STACK_BASE="$1"
+    local LHS="${STACK[$STACK_BASE]}"
+    local RHS="${STACK[$(( STACK_BASE + 1 ))]}"
 
     extract_type "$LHS"
     local tl="$REGISTER"
@@ -279,7 +286,10 @@ function add() {
 
 # function
 function equal() {
-    if [ "$1" = "$2" ]; then
+    local -i STACK_BASE="$1"
+    local LHS="${STACK[$STACK_BASE]}"
+    local RHS="${STACK[$(( STACK_BASE + 1 ))]}"
+    if [ "$LHS" = "$RHS" ]; then
         REGISTER=T
     else
         REGISTER=F
@@ -288,7 +298,10 @@ function equal() {
 
 # function
 function nequal() {
-    if [ "$1" != "$2" ]; then
+    local -i STACK_BASE="$1"
+    local LHS="${STACK[$STACK_BASE]}"
+    local RHS="${STACK[$(( STACK_BASE + 1 ))]}"
+    if [ "$LHS" != "$RHS" ]; then
         REGISTER=T
     else
         REGISTER=F
@@ -297,8 +310,9 @@ function nequal() {
 
 # function
 function and() {
-    local LHS="$1"
-    local RHS="$2"
+    local -i STACK_BASE="$1"
+    local LHS="${STACK[$STACK_BASE]}"
+    local RHS="${STACK[$(( STACK_BASE + 1 ))]}"
 
     if [ "$LHS" = T -a "$RHS" = T ]; then
         REGISTER=T
@@ -309,8 +323,9 @@ function and() {
 
 # function
 function or() {
-    local LHS="$1"
-    local RHS="$2"
+    local -i STACK_BASE="$1"
+    local LHS="${STACK[$STACK_BASE]}"
+    local RHS="${STACK[$(( STACK_BASE + 1 ))]}"
 
     if [ "$LHS" = T -o "$RHS" = T ]; then
         REGISTER=T
@@ -339,8 +354,9 @@ function string_representation() {
 
 # function
 function print() {
-    string_representation "$1"
-    REGISTER="$1"
+    local desired="${STACK[$1]}"
+    string_representation "$desired"
+    REGISTER="$desired"
 }
 
 function bytecode_recog() {
@@ -420,18 +436,9 @@ declare RET=""
 
 function run_global() {
     local -i STACK_BASE=$1
-    local -i NPARAMS=$2
-    local FCALLED="$3"
-    local -a ARGUMENTS
-    local -i i
-    local -i j
+    local FCALLED="$2"
 
-    for (( i=0; i<NPARAMS; i++ )) do
-        j=$(( i + STACK_BASE ))
-        ARGUMENTS[$i]="${STACK[$j]}"
-    done
-
-    $FCALLED "${ARGUMENTS[@]}"
+    $FCALLED $STACK_BASE
     RET="$REGISTER"
 }
 
@@ -571,7 +578,7 @@ function run() {
                 buff="${fcalled#&$nparams}"
 
                 case "${buff::1}" in
-                    '#') run_global $FUTURE_STACK_BASE $nparams "${buff:1}" ;;
+                    '#') run_global $FUTURE_STACK_BASE "${buff:1}" ;;
                     '%') run $(( FUTURE_STACK_BASE - 1 )) $STACK_POINTER "${buff:1}" ;;
                 esac
                 STACK_POINTER+=-$nparams
@@ -594,7 +601,7 @@ function run() {
                 buff="${fcalled#&$nparams}"
 
                 case "${buff::1}" in
-                    '#') run_global $FUTURE_STACK_BASE $nparams "${buff:1}" ;;
+                    '#') run_global $FUTURE_STACK_BASE "${buff:1}" ;;
                     '%') run $(( FUTURE_STACK_BASE - 1 )) $STACK_POINTER "${buff:1}" ;;
                 esac
                 STACK_POINTER+=-$nparams
