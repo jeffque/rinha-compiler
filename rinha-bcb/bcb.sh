@@ -447,6 +447,7 @@ function run() {
     local -i STACK_POINTER=$2
     local LOCAL_FUNCTION="$3"
     local -i INSTRUCTION_POINTER
+    local -i LAST_CONTINUATION_ADDR=-1
 
     local buff
     local region
@@ -569,12 +570,32 @@ function run() {
                 buff="${fcalled#&$nparams}"
 
                 case "${buff::1}" in
-                    '#') run_global $FUTURE_STACK_BASE "${buff:1}" ;;
-                    '%') run $(( FUTURE_STACK_BASE - 1 )) $STACK_POINTER "${buff:1}" ;;
+                    '#')
+                        run_global $FUTURE_STACK_BASE "${buff:1}"
+                        STACK_POINTER+=-$nparams
+                        STACK[${STACK_POINTER}]="$RET"
+                        STACK_POINTER+=1
+                        ;;
+                    '%')
+                        # marcar continuation precisa ser em %0, shift em todos os elementos...
+                        local continuation="$INSTRUCTION_POINTER:$STACK_BASE:$((STACK_POINTER - nparams)):$LAST_CONTINUATION_ADDR:$LOCAL_FUNCTION"
+
+                        local -i i
+
+                        # do shift
+                        for (( i=$FUTURE_STACK_BASE+$nparams ; $i >= $FUTURE_STACK_BASE; i+=-1 )) do
+                            STACK[$i]="${STACK[$(( i - 1 ))]}"
+                        done
+                        STACK[${FUTURE_STACK_BASE}]="$continuation"
+
+                        # colocar novos valores da nova função
+                        LAST_CONTINUATION_ADDR=$FUTURE_STACK_BASE
+                        STACK_BASE=$(( FUTURE_STACK_BASE ))
+                        STACK_POINTER+=1
+                        LOCAL_FUNCTION="${buff:1}"
+                        INSTRUCTION_POINTER=-1
+                        ;;
                 esac
-                STACK_POINTER+=-$nparams
-                STACK[${STACK_POINTER}]="$RET"
-                STACK_POINTER+=1
                 ;;
             EXEC)
                 STACK_POINTER+=-1
@@ -591,12 +612,32 @@ function run() {
                 buff="${fcalled#&$nparams}"
 
                 case "${buff::1}" in
-                    '#') run_global $FUTURE_STACK_BASE "${buff:1}" ;;
-                    '%') run $(( FUTURE_STACK_BASE - 1 )) $STACK_POINTER "${buff:1}" ;;
+                    '#')
+                        run_global $FUTURE_STACK_BASE "${buff:1}"
+                        STACK_POINTER+=-$nparams
+                        STACK[${STACK_POINTER}]="$RET"
+                        STACK_POINTER+=1
+                        ;;
+                    '%')
+                        # marcar continuation precisa ser em %0, shift em todos os elementos...
+                        local continuation="$INSTRUCTION_POINTER:$STACK_BASE:$((STACK_POINTER - nparams)):$LAST_CONTINUATION_ADDR:$LOCAL_FUNCTION"
+
+                        local -i i
+
+                        # do shift
+                        for (( i=$FUTURE_STACK_BASE+$nparams ; $i >= $FUTURE_STACK_BASE; i+=-1 )) do
+                            STACK[$i]="${STACK[$(( i - 1 ))]}"
+                        done
+                        STACK[${FUTURE_STACK_BASE}]="$continuation"
+
+                        # colocar novos valores da nova função
+                        LAST_CONTINUATION_ADDR=$FUTURE_STACK_BASE
+                        STACK_BASE=$(( FUTURE_STACK_BASE ))
+                        STACK_POINTER+=1
+                        LOCAL_FUNCTION="${buff:1}"
+                        INSTRUCTION_POINTER=-1
+                        ;;
                 esac
-                STACK_POINTER+=-$nparams
-                STACK[${STACK_POINTER}]="$RET"
-                STACK_POINTER+=1
                 ;;
             JUMP_IFNOT)
                 local -i start=${INSTRUCTION_POINTER}
@@ -638,7 +679,28 @@ function run() {
             END)
                 STACK_POINTER+=-1
                 RET="${STACK[$STACK_POINTER]}"
-                return
+
+                if [ "$LAST_CONTINUATION_ADDR" = -1 ]; then
+                    return
+                fi
+
+                # resgatar última continuation
+                local continuation="${STACK[$LAST_CONTINUATION_ADDR]}"
+
+                INSTRUCTION_POINTER="${continuation%%:*}"
+                continuation="${continuation#*:}"
+
+                STACK_BASE="${continuation%%:*}"
+                continuation="${continuation#*:}"
+
+                STACK_POINTER="${continuation%%:*}"
+                continuation="${continuation#*:}"
+
+                LAST_CONTINUATION_ADDR="${continuation%%:*}"
+                LOCAL_FUNCTION="${continuation#*:}"
+
+                STACK[${STACK_POINTER}]="$RET"
+                STACK_POINTER+=1
                 ;;
             ERROR)
                 echo "BCB em estado inválido" >&2
