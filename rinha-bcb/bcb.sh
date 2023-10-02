@@ -449,7 +449,6 @@ function run() {
     local -i INSTRUCTION_POINTER
     local -i EOP=${#LOCAL_FUNCTION}
 
-    local STATE_BYTECODE=START
     local buff
     local region
 
@@ -460,12 +459,9 @@ function run() {
     local -i i
 
     for (( INSTRUCTION_POINTER=0 ; INSTRUCTION_POINTER < EOP; INSTRUCTION_POINTER++ )) do
-        case $STATE_BYTECODE in
-            START)
-                buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
-                bytecode_recog $buff
-                STATE_BYTECODE="$REGISTER"
-                ;;
+        bytecode_recog "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+        INSTRUCTION_POINTER+=1
+        case $REGISTER in
             LOAD)
                 region_recog "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                 region="$REGISTER"
@@ -542,7 +538,6 @@ function run() {
                 fi
 
                 STACK_POINTER+=1
-                STATE_BYTECODE=START
                 ;;
             CALL)
                 buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
@@ -584,7 +579,6 @@ function run() {
                 STACK_POINTER+=-$nparams
                 STACK[${STACK_POINTER}]="$RET"
                 STACK_POINTER+=1
-                STATE_BYTECODE=START
                 ;;
             EXEC)
                 STACK_POINTER+=-1
@@ -607,7 +601,6 @@ function run() {
                 STACK_POINTER+=-$nparams
                 STACK[${STACK_POINTER}]="$RET"
                 STACK_POINTER+=1
-                STATE_BYTECODE=START
                 ;;
             JUMP_IFNOT)
                 buff=''
@@ -629,7 +622,6 @@ function run() {
                     done
                     INSTRUCTION_POINTER+=-1
                 fi
-                STATE_BYTECODE=START
                 ;;
             JUMP)
                 buff=''
@@ -649,8 +641,6 @@ function run() {
                     fi
                 done
                 INSTRUCTION_POINTER+=-1
-
-                STATE_BYTECODE=START
                 ;;
             END)
                 STACK_POINTER+=-1
@@ -722,8 +712,6 @@ function bind_values_by_map() {
     local LOCAL_FUNCTION="$1"
     local -i INSTRUCTION_POINTER
     local -i EOP=${#LOCAL_FUNCTION}
-
-    local STATE_BYTECODE
     local buff
     local region
 
