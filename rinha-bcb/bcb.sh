@@ -465,8 +465,8 @@ function run() {
                 INSTRUCTION_POINTER+=1
 
                 if [ "$region" = ERROR ]; then
-                    STATE_BYTECODE=ERROR
-                    continue
+                    echo "BCB em estado inválido" >&2
+                    return 1
                 fi
                 buff=''
                 if [ "$region" = LITERAL ]; then
@@ -544,8 +544,8 @@ function run() {
                 INSTRUCTION_POINTER+=1
 
                 if [ "$region" = ERROR ]; then
-                    STATE_BYTECODE=ERROR
-                    continue
+                    echo "BCB em estado inválido" >&2
+                    return 1
                 fi
 
                 buff=''
@@ -562,8 +562,8 @@ function run() {
                 FUTURE_STACK_BASE=${STACK_POINTER}
                 fcalled="${STACK[$buff]}"
                 if [ "${fcalled::1}" != '&' ]; then
-                    STATE_BYTECODE=ERROR
-                    continue
+                    echo "BCB em estado inválido" >&2
+                    return 1
                 fi
                 extract_args_quant "$fcalled"
                 nparams="$REGISTER"
@@ -585,8 +585,8 @@ function run() {
                 fcalled="${STACK[$STACK_POINTER]}"
 
                 if [ "${fcalled::1}" != '&' ]; then
-                    STATE_BYTECODE=ERROR
-                    continue
+                    echo "BCB em estado inválido" >&2
+                    return 1
                 fi
                 extract_args_quant "$fcalled"
                 nparams="$REGISTER"
@@ -648,6 +648,7 @@ function run() {
             END)
                 STACK_POINTER+=-1
                 RET="${STACK[$STACK_POINTER]}"
+                return
                 ;;
             ERROR)
                 echo "BCB em estado inválido" >&2
@@ -861,6 +862,7 @@ function bind_values_by_map() {
                 assembled+="G$buff;"
                 ;;
             END)
+                break
                 ;;
             ERROR)
                 echo "BCB em estado inválido" >&2
