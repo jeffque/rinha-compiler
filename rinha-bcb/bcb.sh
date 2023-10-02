@@ -458,7 +458,7 @@ function run() {
     local -i njumps
     local -i i
 
-    for (( INSTRUCTION_POINTER=0 ; INSTRUCTION_POINTER < EOP; INSTRUCTION_POINTER++ )) do
+    for (( INSTRUCTION_POINTER=0 ;; INSTRUCTION_POINTER++ )) do
         bytecode_recog "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
         INSTRUCTION_POINTER+=1
         case $REGISTER in
@@ -470,16 +470,15 @@ function run() {
                 if [ "$region" = ERROR ]; then
                     echo "BCB em estado inválido" >&2
                     return 1
-                fi
-                buff=''
-                if [ "$region" = LITERAL ]; then
+                elif [ "$region" = LITERAL ]; then
                     if [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '#' ]; then
+                        buff=''
                         while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
                             buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                             INSTRUCTION_POINTER+=1
                         done
                     elif [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '$' ]; then
-                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:2}"
+                        buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:2}"
                         INSTRUCTION_POINTER+=2
                         while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != '"' ]; do
                             if [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '\' ]; then
@@ -493,8 +492,8 @@ function run() {
                         INSTRUCTION_POINTER+=1
                     elif [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" = '(' ]; then
                         local -i level=1
-                        
-                        buff+="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
+
+                        buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                         INSTRUCTION_POINTER+=1
                         while [ "$level" != '0' ]; do
                             local charLido="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
@@ -549,8 +548,6 @@ function run() {
                     echo "BCB em estado inválido" >&2
                     return 1
                 fi
-
-                buff=''
                 local -i start=${INSTRUCTION_POINTER}
                 local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
@@ -603,7 +600,6 @@ function run() {
                 STACK_POINTER+=1
                 ;;
             JUMP_IFNOT)
-                buff=''
                 local -i start=${INSTRUCTION_POINTER}
                 local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
@@ -624,8 +620,6 @@ function run() {
                 fi
                 ;;
             JUMP)
-                buff=''
-                
                 local -i start=${INSTRUCTION_POINTER}
                 local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
@@ -719,7 +713,7 @@ function bind_values_by_map() {
 
     local assembled=""
 
-    for (( INSTRUCTION_POINTER=0 ; INSTRUCTION_POINTER < EOP; INSTRUCTION_POINTER++ )) do
+    for (( INSTRUCTION_POINTER=0 ;; INSTRUCTION_POINTER++ )) do
         buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
         INSTRUCTION_POINTER+=1
         bytecode_recog $buff
@@ -831,7 +825,6 @@ function bind_values_by_map() {
                 assembled+="X;"
                 ;;
             JUMP_IFNOT)
-                buff=''
                 local -i start=${INSTRUCTION_POINTER}
                 local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
@@ -843,8 +836,6 @@ function bind_values_by_map() {
                 assembled+="J$buff;"
                 ;;
             JUMP)
-                buff=''
-
                 local -i start=${INSTRUCTION_POINTER}
                 local -i cnt=0
                 while [ "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}" != ';' ]; do
