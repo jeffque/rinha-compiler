@@ -460,8 +460,7 @@ function run() {
                 STATE_BYTECODE="$REGISTER"
                 ;;
             LOAD)
-                buff="${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
-                region_recog $buff
+                region_recog "${LOCAL_FUNCTION:${INSTRUCTION_POINTER}:1}"
                 region="$REGISTER"
                 INSTRUCTION_POINTER+=1
 
