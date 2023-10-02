@@ -447,7 +447,6 @@ function run() {
     local -i STACK_POINTER=$2
     local LOCAL_FUNCTION="$3"
     local -i INSTRUCTION_POINTER
-    local -i EOP=${#LOCAL_FUNCTION}
 
     local buff
     local region
@@ -705,7 +704,6 @@ function mangled_id() {
 function bind_values_by_map() {
     local LOCAL_FUNCTION="$1"
     local -i INSTRUCTION_POINTER
-    local -i EOP=${#LOCAL_FUNCTION}
     local buff
     local region
 
